@@ -108,7 +108,8 @@ class LikeALSAlgorithm(ap: ALSAlgorithmParams)
       userFeatures = m.userFeatures,
       productFeatures = m.productFeatures,
       userStringIntMap = userStringIntMap,
-      itemStringIntMap = itemStringIntMap
+      itemStringIntMap = itemStringIntMap,
+      items = items
     )
 
   }
@@ -122,7 +123,7 @@ class LikeALSAlgorithm(ap: ALSAlgorithmParams)
       // recommendProducts() returns Array[MLlibRating], which uses item Int
       // index. Convert it to String ID for returning PredictedResult
       val itemScores = model.recommendProducts(userInt, query.num)
-        .map (r => ItemScore(itemIntStringMap(r.product), r.rating))
+        .map (r => ItemScore(itemIntStringMap(r.product), r.rating, model.items(r.product).domain, model.items(r.product).itemType))
       PredictedResult(itemScores)
     }.getOrElse{
       logger.info(s"No prediction for unknown user ${query.user}.")

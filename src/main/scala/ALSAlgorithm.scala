@@ -43,6 +43,12 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
 
     val userStringIntMap = BiMap.stringInt(data.ratings.map(_.user))
     val itemStringIntMap = BiMap.stringInt(data.ratings.map(_.item))
+    
+    // collect Item as Map and convert ID to Int index
+    val items: Map[Int, Item] = data.items.map { case (id, item) =>
+      (itemStringIntMap(id), item)
+    }.collectAsMap.toMap
+    
     val mllibRatings = data.ratings.map( r =>
       // MLlibRating requires integer index for user and item
       MLlibRating(userStringIntMap(r.user), itemStringIntMap(r.item), r.rating)
@@ -75,10 +81,12 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
       userFeatures = m.userFeatures,
       productFeatures = m.productFeatures,
       userStringIntMap = userStringIntMap,
-      itemStringIntMap = itemStringIntMap)
+      itemStringIntMap = itemStringIntMap,
+      items = items)
   }
 
   def predict(model: ALSModel, query: Query): PredictedResult = {
+    model.items.withDefaultValue(new Item(None, "haystack.in", "POV"))
     // Convert String ID to Int index for Mllib
     model.userStringIntMap.get(query.user).map { userInt =>
       // create inverse view of itemStringIntMap
@@ -86,7 +94,7 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
       // recommendProducts() returns Array[MLlibRating], which uses item Int
       // index. Convert it to String ID for returning PredictedResult
       val itemScores = model.recommendProducts(userInt, query.num)
-        .map (r => ItemScore(itemIntStringMap(r.product), r.rating))
+        .map (r => ItemScore(itemIntStringMap(r.product), r.rating, model.items(r.product).domain, model.items(r.product).itemType))
       PredictedResult(itemScores)
     }.getOrElse{
       logger.info(s"No prediction for unknown user ${query.user}.")
@@ -127,7 +135,7 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
         .take(query.num)
         .map { rating => ItemScore(
           model.itemStringIntMap.inverse(rating.product),
-          rating.rating) }
+          rating.rating, "", "") }
 
         (ix, PredictedResult(itemScores = topItemScores))
       }

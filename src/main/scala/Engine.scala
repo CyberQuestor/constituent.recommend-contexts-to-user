@@ -20,7 +20,9 @@ case class ActualResult(
 
 case class ItemScore(
   item: String,
-  score: Double
+  score: Double,
+  domain: String,
+  itemType: String
 )
 
 object RecommendationEngine extends EngineFactory {

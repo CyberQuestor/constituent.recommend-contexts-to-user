@@ -6,6 +6,7 @@ package org.apache.spark.mllib.recommendation
 // its constructor in order to save and load the model
 
 import com.hs.haystack.tachyon.constituent.recommendcontextstouser.ALSAlgorithmParams
+import com.hs.haystack.tachyon.constituent.recommendcontextstouser.Item
 
 import org.apache.predictionio.controller.PersistentModel
 import org.apache.predictionio.controller.PersistentModelLoader
@@ -20,7 +21,8 @@ class ALSModel(
     override val userFeatures: RDD[(Int, Array[Double])],
     override val productFeatures: RDD[(Int, Array[Double])],
     val userStringIntMap: BiMap[String, Int],
-    val itemStringIntMap: BiMap[String, Int])
+    val itemStringIntMap: BiMap[String, Int],
+    val items: Map[Int, Item])
   extends MatrixFactorizationModel(rank, userFeatures, productFeatures)
   with PersistentModel[ALSAlgorithmParams] {
 
@@ -34,6 +36,8 @@ class ALSModel(
       .saveAsObjectFile(s"/tmp/${id}/userStringIntMap")
     sc.parallelize(Seq(itemStringIntMap))
       .saveAsObjectFile(s"/tmp/${id}/itemStringIntMap")
+      sc.parallelize(Seq(items))
+      .saveAsObjectFile(s"/tmp/${id}/items")
     true
   }
 
@@ -60,6 +64,8 @@ object ALSModel
       userStringIntMap = sc.get
         .objectFile[BiMap[String, Int]](s"/tmp/${id}/userStringIntMap").first,
       itemStringIntMap = sc.get
-        .objectFile[BiMap[String, Int]](s"/tmp/${id}/itemStringIntMap").first)
+        .objectFile[BiMap[String, Int]](s"/tmp/${id}/itemStringIntMap").first,
+      items = sc.get
+      .objectFile[Map[Int, Item]](s"/tmp/${id}/items").first)
   }
 }

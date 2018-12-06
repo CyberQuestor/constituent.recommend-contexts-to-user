@@ -34,10 +34,12 @@ class Serving
               (is.score - mvList(i).mean) / mvList(i).stdDev
             }
 
-            ItemScore(is.item, score)
+            ItemScore(is.item, score, is.domain, is.itemType)
           }
         }
     }
+    
+    val populate = standard.flatten.map (t => t.item -> t).toMap.withDefaultValue(new ItemScore("",4.0,"haystack.in","POV"))
     
     // sum the standardized score if same item
     val combined = standard.flatten // Array of ItemScore
@@ -46,8 +48,16 @@ class Serving
       .toArray // array of (item id, score)
       .sortBy(_._2)(Ordering.Double.reverse)
       .take(query.num)
-      .map { case (k,v) => ItemScore(k, v) }
-
-    PredictedResult(combined)
+      .map { case (k,v) => ItemScore(k, v, "", "") }
+    
+    var combinedWithOthers = List[ItemScore]()     
+    
+    combined.foreach(e => {
+					val domain = populate.get(e.item).get.domain
+					val itemType = populate.get(e.item).get.itemType
+					combinedWithOthers ::= new ItemScore(e.item, e.score, domain, itemType)
+					})
+					
+    PredictedResult(combinedWithOthers.toArray)
   }
 }
