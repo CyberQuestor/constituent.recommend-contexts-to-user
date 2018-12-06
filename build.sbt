@@ -1,7 +1,7 @@
 
 name := "constituent.recommend-contexts-to-user"
 
-organization := "org.haystack.holu"
+organization := "org.haystack"
 scalaVersion := "2.11.8"
 libraryDependencies ++= Seq(
   "org.apache.predictionio" %% "apache-predictionio-core" % "0.13.0" % "provided",
