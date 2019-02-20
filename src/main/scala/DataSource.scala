@@ -125,7 +125,7 @@ class DataSource(val dsp: DataSourceParams)
     )(sc).map { case (entityId, properties) =>
       val item = try {
         // Assume categories is optional property of item.
-        Item(categories = properties.getOpt[List[String]]("categories"), properties.getOrElse[String]("domain",""), properties.getOrElse[String]("type",""))
+        Item(id = entityId, categories = properties.getOpt[List[String]]("categories"), properties.getOrElse[String]("domain",""), properties.getOrElse[String]("type",""))
       } catch {
         case e: Exception => {
           logger.error(s"Failed to get properties ${properties} of" +
@@ -138,10 +138,40 @@ class DataSource(val dsp: DataSourceParams)
     
     itemsRDD
   }
+  
+  def getViews(sc: SparkContext): RDD[ViewEvent] = {
+     val viewEventsRDD: RDD[ViewEvent] = PEventStore.find(
+      appName = dsp.appName,
+      entityType = Some("user"),
+      eventNames = Some(List("view")),
+      // targetEntityType is optional field of an event.
+      targetEntityType = Some(Some("item")))(sc)
+      // eventsDb.find() returns RDD[Event]
+      .map { event =>
+        val viewEvent = try {
+          event.event match {
+            case "view" => ViewEvent(
+              user = event.entityId,
+              item = event.targetEntityId.get,
+              t = event.eventTime.getMillis)
+            case _ => throw new Exception(s"Unexpected event ${event} is read.")
+          }
+        } catch {
+          case e: Exception => {
+            logger.error(s"Cannot convert ${event} to ViewEvent." +
+              s" Exception: ${e}.")
+            throw e
+          }
+        }
+        viewEvent
+      }.cache()
+      
+      viewEventsRDD
+  }
 
   override
   def readTraining(sc: SparkContext): TrainingData = {
-    new TrainingData(getUsers(sc), getItems(sc), getRatings(sc), getInterests(sc))
+    new TrainingData(getUsers(sc), getItems(sc), getRatings(sc), getViews(sc), getInterests(sc))
   }
 
   override
@@ -153,8 +183,10 @@ class DataSource(val dsp: DataSourceParams)
     val kFold = evalParams.kFold
     val ratings: RDD[(Rating, Long)] = getRatings(sc).zipWithUniqueId
     ratings.cache
+    
+    null
 
-    (0 until kFold).map { idx => {
+    /*(0 until kFold).map { idx => {
       val trainingRatings = ratings.filter(_._2 % kFold != idx).map(_._1)
       val testingRatings = ratings.filter(_._2 % kFold == idx).map(_._1)
 
@@ -166,7 +198,7 @@ class DataSource(val dsp: DataSourceParams)
           case (user, ratings) => (Query(user, evalParams.queryNum), ActualResult(ratings.toArray))
         }
       )
-    }}
+    }}*/
   }
 }
 
@@ -185,7 +217,10 @@ case class LikeEvent( // ADDED
 
 case class User()
 
+case class ViewEvent(user: String, item: String, t: Long)
+
 case class Item(
+    val id: String,
     val categories: Option[List[String]],
     val domain: String,
     val itemType: String)
@@ -194,6 +229,7 @@ class TrainingData(
   val users: RDD[(String, User)],
   val items: RDD[(String, Item)],
   val ratings: RDD[Rating],
+  val viewEvents: RDD[ViewEvent], // Added
   val likeEvents: RDD[LikeEvent] // ADDED
 ) extends Serializable {
   override def toString = {
