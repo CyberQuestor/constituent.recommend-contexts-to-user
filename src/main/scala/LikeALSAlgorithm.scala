@@ -42,14 +42,16 @@ class LikeALSAlgorithm(ap: ALSAlgorithmParams)
       s"items in PreparedData cannot be empty." +
       " Please check if DataSource generates TrainingData" +
       " and Preprator generates PreparedData correctly.")
+      
+      println("Training recommended items model through ALS likes")
 
     // create User and item's String ID to integer index BiMap
     val userStringIntMap = BiMap.stringInt(data.users.keys)
     val itemStringIntMap = BiMap.stringInt(data.items.keys)
     
     // collect Item as Map and convert ID to Int index
-    val items: Map[Int, Item] = data.items.map { case (id, item) =>
-      (itemStringIntMap(id), item)
+    val items: Map[Int, Item] = data.items.map { case (id, item) =>(itemStringIntMap.getOrElse(id, 0), item)
+      case default => (0, Item("00000000-0000-0000-0000-000000000000", None,"haystack.in","POV"))
     }.collectAsMap.toMap
     
     val mllibRatings = data.likeEvents
@@ -80,7 +82,7 @@ class LikeALSAlgorithm(ap: ALSAlgorithmParams)
         if (t1 > t2) v1 else v2
       }.map { case ((u, i), (like, t)) => // MODIFIED
         // With ALS.trainImplicit(), we can use negative value to indicate
-        // nagative siginal (ie. dislike)
+        // negative signal (ie. dislike)
         val r = if (like) 1 else -1
         // MLlibRating requires integer index for user and item
         MLlibRating(u, i, r)
@@ -94,6 +96,16 @@ class LikeALSAlgorithm(ap: ALSAlgorithmParams)
     // seed for MLlib ALS
     val seed = ap.seed.getOrElse(System.nanoTime)
     
+    println("ready for spark")
+    println("top 50")
+    //mllibRatings.take(50).foreach(println)
+    
+    /*mllibRatings.take(50).foreach(e => {
+      val i = items.getOrElse(e.product, "Item missing")
+      println("Composition: " + e)
+      println("Composition item: " + i)
+    })*/
+    
     val m = ALS.trainImplicit(
       ratings = mllibRatings,
       rank = ap.rank,
@@ -102,6 +114,11 @@ class LikeALSAlgorithm(ap: ALSAlgorithmParams)
       blocks = -1,
       alpha = 1.0,
       seed = seed)
+      
+      println("Model through ALS likes training complete")
+      
+      println("trained product features")
+      // m.userFeatures.take(50).foreach(println)
       
     new ALSModel(
       rank = m.rank,
@@ -112,23 +129,6 @@ class LikeALSAlgorithm(ap: ALSAlgorithmParams)
       items = items
     )
 
-  }
-
-  override
-  def predict(model: ALSModel, query: Query): PredictedResult = {
-    // Convert String ID to Int index for Mllib
-    model.userStringIntMap.get(query.user).map { userInt =>
-      // create inverse view of itemStringIntMap
-      val itemIntStringMap = model.itemStringIntMap.inverse
-      // recommendProducts() returns Array[MLlibRating], which uses item Int
-      // index. Convert it to String ID for returning PredictedResult
-      val itemScores = model.recommendProducts(userInt, query.num)
-        .map (r => ItemScore(itemIntStringMap(r.product), r.rating, model.items(r.product).domain, model.items(r.product).itemType))
-      PredictedResult(itemScores)
-    }.getOrElse{
-      logger.info(s"No prediction for unknown user ${query.user}.")
-      PredictedResult(Array.empty)
-    }
   }
 
 }
