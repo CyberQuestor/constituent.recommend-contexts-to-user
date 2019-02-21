@@ -39,6 +39,9 @@ class Serving
         }
     }
     
+    println("being served is")
+    standard.take(8).foreach(println)
+    
     val populate = standard.flatten.map (t => t.item -> t).toMap.withDefaultValue(new ItemScore("",4.0,"haystack.in","POV"))
     
     // sum the standardized score if same item
@@ -49,6 +52,9 @@ class Serving
       .sortBy(_._2)(Ordering.Double.reverse)
       .take(query.num)
       .map { case (k,v) => ItemScore(k, v, "", "") }
+    
+    println("and that being combined")
+    combined.take(8).foreach(println)
     
     var combinedWithOthers = List[ItemScore]()     
     
