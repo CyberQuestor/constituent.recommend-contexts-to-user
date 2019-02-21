@@ -128,6 +128,10 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
       val itemIntStringMap = model.itemStringIntMap.inverse
       println("triggering item recommendations")
       try{
+        val itemScoresToShow = model.recommendProducts(e, query.num)
+        println("items are: ")
+        itemScoresToShow.take(8).foreach(println)
+        
         val itemScores = model.recommendProducts(e, query.num)
            .map (r => ItemScore(itemIntStringMap(r.product), r.rating, allItemsMap(r.product).domain, allItemsMap(r.product).itemType))
         combinedWithOthers = combinedWithOthers ++ itemScores
