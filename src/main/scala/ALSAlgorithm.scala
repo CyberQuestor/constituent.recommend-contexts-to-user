@@ -117,30 +117,30 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
     model.items.withDefaultValue(new Item("00000000-0000-0000-0000-000000000000", None, "haystack.in", "POV"))
     
     // convert items to Int index
-    val queryList: Set[Int] = query.users.map(model.itemStringIntMap.get(_))
+    val queryList: Set[Int] = query.users.map(model.userStringIntMap.get(_))
       .flatten.toSet
     // get all items
     val allItemsMap = model.items
     
     var combinedWithOthers = ArrayBuffer[ItemScore]()
     queryList.foreach (e => {
-      println("user now is: " + e)
+      //println("user now is: " + e)
       val itemIntStringMap = model.itemStringIntMap.inverse
-      println("triggering item recommendations")
+      //println("triggering item recommendations")
       try{
+        //println("items are: ")
         val itemScoresToShow = model.recommendProducts(e, query.num)
-        println("items are: ")
-        itemScoresToShow.take(8).foreach(println)
+        //itemScoresToShow.take(8).foreach(println)
         
         val itemScores = model.recommendProducts(e, query.num)
            .map (r => ItemScore(itemIntStringMap(r.product), r.rating, allItemsMap(r.product).domain, allItemsMap(r.product).itemType))
         combinedWithOthers = combinedWithOthers ++ itemScores
       } catch {
         case ex : NoSuchElementException => {
-            //println("No user features found for this item")
+            //println("No item features element found for this item")
          }
         case e: Exception => {
-            //println("No user features found for this item")
+            //println("No item features found for this item at all")
         }
       }
     })
@@ -164,8 +164,8 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
        combinedWithOthers.take(50).foreach(println)
     })*/
     
-    println("what is being combined")
-    combinedWithOthers.take(8).foreach(println)
+    //println("what is being combined")
+    //combinedWithOthers.take(8).foreach(println)
     
     PredictedResult(combinedWithOthers.toArray)
   }
