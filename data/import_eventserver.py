@@ -40,24 +40,41 @@ def import_events(client, file):
       target_entity_type="item",
       target_entity_id=data[1]
     )
+    client.create_event(
+      event="$set",
+      entity_type="user",
+      entity_id=data[0]
+    )
     count += 1
     # For demonstration purpose, randomly mix in some buy events
     if (random.randint(0, 1) == 1):
       client.create_event(
-        event="rate",
+        event="like",
         entity_type="user",
         entity_id=data[0],
         target_entity_type="item",
         target_entity_id=data[1],
         properties= { "rating" : float(data[2]) }
       )
+      client.create_event(
+        event="$set",
+        entity_type="item",
+        entity_id=data[1],
+        properties= { "domain" : "haystack.in", "type": "POV" }
+      )
     else:
       client.create_event(
-        event="buy",
+        event="dislike",
         entity_type="user",
         entity_id=data[0],
         target_entity_type="item",
         target_entity_id=data[1]
+      )
+      client.create_event(
+        event="$set",
+        entity_type="item",
+        entity_id=data[1],
+        properties= { "domain" : "haystack.in", "type": "POV" }
       )
     count += 1
   f.close()
