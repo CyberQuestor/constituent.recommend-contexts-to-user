@@ -74,7 +74,7 @@ def import_events(client, file):
         event="$set",
         entity_type="item",
         entity_id=data[1],
-        properties= { "domain" : "haystack.in", "type": "POV" }
+        properties= { "domain" : "haystack.in", "type": "Survey" }
       )
     count += 1
   f.close()
