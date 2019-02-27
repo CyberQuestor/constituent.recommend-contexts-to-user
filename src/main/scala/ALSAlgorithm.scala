@@ -167,7 +167,7 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
     //println("what is being combined")
     //combinedWithOthers.take(8).foreach(println)
     
-    PredictedResult(combinedWithOthers.toArray)
+    PredictedResult(combinedWithOthers.toArray, Array())
   }
 
 }

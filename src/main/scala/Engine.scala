@@ -11,7 +11,8 @@ case class Query(
 )
 
 case class PredictedResult(
-  itemScores: Array[ItemScore]
+  itemScores: Array[ItemScore],
+  vehicleScores: Array[VehicleScore]
 )
 
 case class ActualResult(
@@ -23,6 +24,12 @@ case class ItemScore(
   score: Double,
   domain: String,
   itemType: String
+)
+
+case class VehicleScore(
+  vehicleType: String,
+  aggregateScore: Double,
+  frequency: Double
 )
 
 object RecommendationEngine extends EngineFactory {

@@ -64,6 +64,11 @@ class Serving
 					combinedWithOthers ::= new ItemScore(e.item, e.score, domain, itemType)
 					})
 					
-    PredictedResult(combinedWithOthers.toArray)
+		var vehicularScoreMap = combinedWithOthers.groupBy(e => e.itemType).mapValues(_.foldLeft(0.0)(_ + _.score))
+		var vehicularMap = combinedWithOthers.groupBy(e => e.itemType).mapValues(_.size)
+		val total = vehicularMap.values.sum.toDouble
+		val vehicularSegmentMap = vehicularMap.map { case (k,v) => VehicleScore(k, vehicularScoreMap(k), (v / total)) }
+					
+    PredictedResult(combinedWithOthers.toArray, vehicularSegmentMap.toArray)
   }
 }
