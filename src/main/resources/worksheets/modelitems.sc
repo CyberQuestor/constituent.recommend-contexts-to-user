@@ -1,6 +1,6 @@
 package worksheets
 
-import com.hs.haystack.tachyon.constituent.recommendcontextstouser._
+//import com.hs.haystack.tachyon.constituent.recommendcontextstouser._
 
 import breeze.stats.meanAndVariance
 import breeze.stats.MeanAndVariance
@@ -33,7 +33,7 @@ new ItemScore("5", 5.0, "d5", "t5"))              //> allScores  : Array[workshe
 
 val predictedResults: Seq[PredictedResult]  = Seq(new PredictedResult(allScores))
                                                   //> predictedResults  : Seq[worksheets.PredictedResult] = List(PredictedResult([
-                                                  //| Lworksheets.ItemScore;@2f943d71))
+                                                  //| Lworksheets.ItemScore;@2173f6d9))
 
 val standard1: Seq[Array[ItemScore]] = predictedResults.map(_.itemScores)
                                                   //> standard1  : Seq[Array[worksheets.ItemScore]] = List(Array(ItemScore(1,1.0,
