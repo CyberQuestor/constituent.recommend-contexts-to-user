@@ -6,6 +6,7 @@ import org.apache.predictionio.controller.EngineFactory
 import org.apache.predictionio.controller.Engine
 
 case class Query(
+  aim: String,
   users: List[String],
   num: Int
 )

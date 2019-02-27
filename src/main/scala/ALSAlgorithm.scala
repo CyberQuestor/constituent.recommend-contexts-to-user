@@ -114,6 +114,15 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
   }
 
   def predict(model: ALSModel, query: Query): PredictedResult = {
+    val prediction = query.aim match {
+      case "item" => predictItems(model, query)
+      case "vehicle" => predictItems(model, query)
+      case _ => PredictedResult(Array(), Array())
+    }
+    prediction
+  }
+  
+  def predictItems(model: ALSModel, query: Query): PredictedResult = {
     model.items.withDefaultValue(new Item("00000000-0000-0000-0000-000000000000", None, "haystack.in", "POV"))
     
     // convert items to Int index

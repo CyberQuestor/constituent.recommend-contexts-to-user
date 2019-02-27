@@ -12,6 +12,36 @@ class Serving
   override
   def serve(query: Query,
     predictedResults: Seq[PredictedResult]): PredictedResult = {
+    val prediction = query.aim match {
+      case "item" => serveItems(query, predictedResults)
+      case "vehicle" => serveVehicles(query, predictedResults)
+      case _ => PredictedResult(Array(), Array())
+    }
+    prediction
+  }
+  
+  def serveItems(query: Query,
+    predictedResults: Seq[PredictedResult]): PredictedResult = {
+    val combinedWithOthers = serveCommonItems(query, predictedResults)
+    PredictedResult(combinedWithOthers.toArray, Array())
+  }
+  
+  def serveVehicles(query: Query,
+    predictedResults: Seq[PredictedResult]): PredictedResult = {
+    
+    val combinedWithOthers = serveCommonItems(query, predictedResults)
+					
+		var vehicularScoreMap = combinedWithOthers.groupBy(e => e.itemType).mapValues(_.foldLeft(0.0)(_ + _.score))
+		var vehicularMap = combinedWithOthers.groupBy(e => e.itemType).mapValues(_.size)
+		val total = vehicularMap.values.sum.toDouble
+		val vehicularSegmentMap = vehicularMap.map { case (k,v) => VehicleScore(k, vehicularScoreMap(k), (v / total)) }
+					
+    PredictedResult(combinedWithOthers.toArray, vehicularSegmentMap.toArray)
+  }
+  
+  def serveCommonItems(query: Query,
+    predictedResults: Seq[PredictedResult]): List[ItemScore] = {
+    
     // MODFIED
     val standard: Seq[Array[ItemScore]] = if (query.num == 1) {
       // if query 1 item, don't standardize
@@ -63,12 +93,7 @@ class Serving
 					val itemType = populate.get(e.item).get.itemType
 					combinedWithOthers ::= new ItemScore(e.item, e.score, domain, itemType)
 					})
-					
-		var vehicularScoreMap = combinedWithOthers.groupBy(e => e.itemType).mapValues(_.foldLeft(0.0)(_ + _.score))
-		var vehicularMap = combinedWithOthers.groupBy(e => e.itemType).mapValues(_.size)
-		val total = vehicularMap.values.sum.toDouble
-		val vehicularSegmentMap = vehicularMap.map { case (k,v) => VehicleScore(k, vehicularScoreMap(k), (v / total)) }
-					
-    PredictedResult(combinedWithOthers.toArray, vehicularSegmentMap.toArray)
+		combinedWithOthers
   }
+ 
 }
