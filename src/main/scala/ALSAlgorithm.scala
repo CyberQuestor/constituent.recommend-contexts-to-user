@@ -57,7 +57,7 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
     
     // collect Item as Map and convert ID to Int index
     val items: Map[Int, Item] = data.items.map { case (id, item) =>(itemStringIntMap.getOrElse(id, 0), item)
-      case default => (0, Item("00000000-0000-0000-0000-000000000000", None,"haystack.in","POV"))
+      case default => (0, Item("00000000-0000-0000-0000-000000000000", None,"haystack.in","POV","00000000-0000-0000-0000-000000000000"))
     }.collectAsMap.toMap
     
     val mllibRatings = data.viewEvents
@@ -115,15 +115,15 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
 
   def predict(model: ALSModel, query: Query): PredictedResult = {
     val prediction = query.aim match {
-      case "item" => predictItems(model, query)
-      case "vehicle" => predictItems(model, query)
+      case "item" => predictItems(model, query, query.num)
+      case "vehicle" => predictItems(model, query, Int.MaxValue)
       case _ => PredictedResult(Array(), Array())
     }
     prediction
   }
   
-  def predictItems(model: ALSModel, query: Query): PredictedResult = {
-    model.items.withDefaultValue(new Item("00000000-0000-0000-0000-000000000000", None, "haystack.in", "POV"))
+  def predictItems(model: ALSModel, query: Query, num: Int): PredictedResult = {
+    model.items.withDefaultValue(new Item("00000000-0000-0000-0000-000000000000", None, "haystack.in", "POV","00000000-0000-0000-0000-000000000000"))
     
     // convert items to Int index
     val queryList: Set[Int] = query.users.map(model.userStringIntMap.get(_))
@@ -137,10 +137,6 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
       val itemIntStringMap = model.itemStringIntMap.inverse
       //println("triggering item recommendations")
       try{
-        //println("items are: ")
-        val itemScoresToShow = model.recommendProducts(e, query.num)
-        //itemScoresToShow.take(8).foreach(println)
-        
         val itemScores = model.recommendProducts(e, query.num)
            .map (r => ItemScore(itemIntStringMap(r.product), r.rating, allItemsMap(r.product).domain, allItemsMap(r.product).itemType))
         combinedWithOthers = combinedWithOthers ++ itemScores
@@ -153,25 +149,6 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
         }
       }
     })
-    
-
-    
-    /*query.items.foreach (e => {
-      // Convert String ID to Int index for Mllib
-       model.itemStringIntMap.get(e).map { itemInt =>
-         // create inverse view of userStringIntMap
-         val userIntStringMap = model.userStringIntMap.inverse
-         // recommendUsers() returns Array[MLlibRating], which uses item Int
-         // index. Convert it to String ID for returning PredictedResult
-         val userScores = model.recommendUsers(itemInt, query.num)
-         .map (r => UserScore(userIntStringMap(r.user), r.rating))
-         combinedWithOthers ++ userScores
-       }.getOrElse{
-        logger.info(s"No prediction for unknown item ${e}.")
-       }
-       println("what is being combined")
-       combinedWithOthers.take(50).foreach(println)
-    })*/
     
     //println("what is being combined")
     //combinedWithOthers.take(8).foreach(println)
